@@ -26,10 +26,14 @@ try
         try
         {
             // Accept a client socket - this will wait for a connection
-            var clientSocket = await server.AcceptSocketAsync().ConfigureAwait(false);
+            var clientSocket = await server.AcceptSocketAsync(cts.Token);
 
             // Process each client in a separate task
             _ = Task.Run(() => ProcessClientAsync(clientSocket));
+        }
+        catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
+        {
+            // This is expected when cancellation is requested
         }
         catch (SocketException ex)
         {
@@ -59,20 +63,48 @@ async Task ProcessClientAsync(Socket clientSocket)
     {
         using var _ = clientSocket;
 
-        var requestBuffer = new byte[2048];
-        var request = await clientSocket.ReceiveAsync(
-            new ArraySegment<byte>(requestBuffer),
-            SocketFlags.None);
-
-        // TODO: Parse the request
-
-        byte[] responseBytes = Encoding.UTF8.GetBytes("HTTP/1.1 200 OK\r\n\r\n");
-        await clientSocket.SendAsync(
-            new ArraySegment<byte>(responseBytes),
-            SocketFlags.None);
+        var request = await GetRequestAsync(clientSocket);
+        var response = await HandleRequestAsync(request);
+        await SendResponseAsync(clientSocket, response);
     }
     catch (Exception ex)
     {
         Console.WriteLine($"Error processing client: {ex.Message}");
     }
+}
+
+static async Task<string> GetRequestAsync(Socket clientSocket)
+{
+    var requestBuffer = new byte[2048];
+    StringBuilder requestData = new(2048);
+    int bytesRead = 0;
+    do
+    {
+        bytesRead = await clientSocket.ReceiveAsync(
+            new ArraySegment<byte>(requestBuffer),
+            SocketFlags.None);
+
+        requestData.Append(Encoding.UTF8.GetString(requestBuffer, 0, bytesRead));
+    } while (bytesRead > 0);
+
+    return requestData.ToString();
+}
+
+static async Task<string> HandleRequestAsync(string request)
+{
+    if (request.StartsWith("GET / "))
+    {
+        return "HTTP/1.1 200 OK\r\n\r\n";
+    }
+
+    return "HTTP/1.1 404 Not Found\r\n\r\n";
+}
+
+static async Task SendResponseAsync(Socket clientSocket, string response)
+{
+    var responseBytes = Encoding.UTF8.GetBytes(response);
+
+    await clientSocket.SendAsync(
+        new ArraySegment<byte>(responseBytes),
+        SocketFlags.None);
 }
