@@ -1,3 +1,4 @@
+using codecrafters_http_server.src;
 using System.Net.Sockets;
 using System.Text;
 
@@ -24,7 +25,7 @@ public class SocketHandler : IDisposable
         }
     }
 
-    private async Task<string> GetRequestAsync()
+    private async Task<HttpRequest> GetRequestAsync()
     {
         var requestBuffer = new byte[2048];
         StringBuilder requestData = new(2048);
@@ -40,25 +41,57 @@ public class SocketHandler : IDisposable
             if (requestData.ToString().EndsWith("\r\n\r\n")) break;
         } while (bytesRead > 0);
 
-        return requestData.ToString();
+        return HttpRequest.Parse(requestData.ToString());
     }
 
-    private async Task<string> HandleRequestAsync(string request)
+    private async Task<HttpResponse> HandleRequestAsync(HttpRequest request)
     {
-        if (request.StartsWith("GET / "))
+        if (request.Method == "GET" && request.Path == "/")
         {
-            return "HTTP/1.1 200 OK\r\n\r\n";
+            return new HttpResponse
+            {
+                Version = request.Version,
+                StatusCode = 200,
+                StatusText = "OK"
+            };
         }
 
-        return "HTTP/1.1 404 Not Found\r\n\r\n";
+        return new HttpResponse
+        {
+            Version = request.Version,
+            StatusCode = 404,
+            StatusText = "Not Found"
+        };
     }
 
-    private async Task SendResponseAsync(string response)
+    private async Task SendResponseAsync(HttpResponse response)
     {
-        var responseBytes = Encoding.UTF8.GetBytes(response);
+        string statusLine = $"{response.Version} {response.StatusCode} {response.StatusText}\r\n";
+        await SendLineAsync(statusLine);
 
+        foreach (var header in response.Headers)
+        {
+            string headerLine = $"{header.Key}: {header.Value}\r\n";
+            await SendLineAsync(headerLine);
+        }
+
+        // Send empty line to separate headers from body
+        await SendLineAsync("\r\n");
+
+        if (!string.IsNullOrEmpty(response.Body))
+        {
+            await SendLineAsync(response.Body);
+        }
+
+        // Send final empty line to indicate end of response
+        await SendLineAsync("\r\n\r\n");
+    }
+
+    private async Task SendLineAsync(string line)
+    {
+        byte[] lineBytes = Encoding.UTF8.GetBytes(line);
         await _clientSocket.SendAsync(
-            new ArraySegment<byte>(responseBytes),
+            new ArraySegment<byte>(lineBytes),
             SocketFlags.None);
     }
 
