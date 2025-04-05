@@ -85,6 +85,8 @@ static async Task<string> GetRequestAsync(Socket clientSocket)
             SocketFlags.None);
 
         requestData.Append(Encoding.UTF8.GetString(requestBuffer, 0, bytesRead));
+
+        if (requestData.ToString().EndsWith("\r\n\r\n")) break;
     } while (bytesRead > 0);
 
     return requestData.ToString();
