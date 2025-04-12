@@ -1,14 +1,17 @@
 using codecrafters_http_server.src;
+using codecrafters_http_server.src.Handlers;
 using System.Net.Sockets;
 using System.Text;
 
 public class SocketHandler : IDisposable
 {
     private readonly Socket _clientSocket;
+    private readonly IRequestHandler _requestHandler;
 
-    public SocketHandler(Socket clientSocket)
+    public SocketHandler(Socket clientSocket, IRequestHandler requestHandler)
     {
         _clientSocket = clientSocket;
+        _requestHandler = requestHandler;
     }
 
     public async Task ProcessClientAsync()
@@ -21,6 +24,7 @@ public class SocketHandler : IDisposable
         }
         catch (Exception ex)
         {
+            // TODO Handle exceptions
             Console.WriteLine($"Error processing client: {ex.Message}");
         }
     }
@@ -46,21 +50,12 @@ public class SocketHandler : IDisposable
 
     private async Task<HttpResponse> HandleRequestAsync(HttpRequest request)
     {
-        if (request.Method == "GET" && request.Path == "/")
-        {
-            return new HttpResponse
-            {
-                Version = request.Version,
-                StatusCode = 200,
-                StatusText = "OK"
-            };
-        }
-
-        return new HttpResponse
+        var response = await _requestHandler.HandleRequestAsync(request);
+        return response ?? new HttpResponse
         {
             Version = request.Version,
-            StatusCode = 404,
-            StatusText = "Not Found"
+            StatusCode = 500,
+            StatusText = "Internal Server Error"
         };
     }
 

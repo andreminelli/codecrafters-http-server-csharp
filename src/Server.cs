@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using codecrafters_http_server.src.Handlers;
 
 const int port = 4221;
 
@@ -15,6 +16,13 @@ Console.CancelKeyPress += (sender, e) =>
     e.Cancel = true;
 };
 
+var handlers = new IRequestHandler[]
+{
+    new HomeRequestHandler(),
+    new NotFoundRequestHandler()
+};
+var chainedHandler = new ChainedRequestHandler(handlers);
+
 while (!cts.Token.IsCancellationRequested)
 {
     try
@@ -23,7 +31,7 @@ while (!cts.Token.IsCancellationRequested)
 
         _ = Task.Run(() =>
         {
-            using var handler = new SocketHandler(clientSocket);
+            using var handler = new SocketHandler(clientSocket, chainedHandler);
             return handler.ProcessClientAsync();
         });
     }
