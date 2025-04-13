@@ -3,12 +3,12 @@ using codecrafters_http_server.src.Handlers;
 using System.Net.Sockets;
 using System.Text;
 
-public class ClienteHandler : IDisposable
+public class ClientHandler : IDisposable
 {
     private readonly TcpClient _tcpClient;
     private readonly IRequestHandler _requestHandler;
 
-    public ClienteHandler(TcpClient tcpClient, IRequestHandler requestHandler)
+    public ClientHandler(TcpClient tcpClient, IRequestHandler requestHandler)
     {
         _tcpClient = tcpClient;
         _requestHandler = requestHandler;
@@ -31,7 +31,7 @@ public class ClienteHandler : IDisposable
             {
                 StatusCode = 500,
                 StatusText = "Internal Server Error",
-                Version = request?.Version ?? "1.0"
+                Version = request?.Version ?? "HTTP/1.0"
             };
         }
 

@@ -20,6 +20,7 @@ var handlers = new IRequestHandler[]
 {
     new HomeRequestHandler(),
     new EchoRequestHandler(),
+    new UserAgentRequestHandler(),
 };
 var chainedHandler = new PipelineRequestHandler(handlers);
 
@@ -31,7 +32,7 @@ while (!cts.Token.IsCancellationRequested && server.Server.IsBound)
 
         _ = Task.Run(async () =>
         {
-            using var handler = new ClienteHandler(tcpClient, chainedHandler);
+            using var handler = new ClientHandler(tcpClient, chainedHandler);
             await handler.ProcessClientAsync();
         });
     }
