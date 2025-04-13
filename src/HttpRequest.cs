@@ -8,10 +8,7 @@ public record HttpRequest(string Method, string Path, string Version, ReadOnlyDi
     {
         var lines = request.Split(["\r\n"], StringSplitOptions.None);
 
-        var requestLine = lines[0].Split(' ');
-        var method = requestLine[0];
-        var path = requestLine[1];
-        var version = requestLine[2];
+        var (method, path, version) = ParseRequestLine(lines[0]);
 
         var headers = new Dictionary<string, string>();
 
@@ -20,5 +17,10 @@ public record HttpRequest(string Method, string Path, string Version, ReadOnlyDi
 
         return new HttpRequest(method, path, version, new ReadOnlyDictionary<string, string>(headers), string.Empty);
     }
-}
 
+    private static (string method, string path, string version) ParseRequestLine(string requestLine)
+    {
+        var parts = requestLine.Split(' ');
+        return (method: parts[0], path: parts[1], version: parts[2]);
+    }
+}

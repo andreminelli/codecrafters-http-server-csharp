@@ -16,17 +16,26 @@ public class ClienteHandler : IDisposable
 
     public async Task ProcessClientAsync()
     {
+        HttpRequest? request = null;
+        HttpResponse? response = null;
+
         try
         {
-            var request = await GetRequestAsync();
-            var response = await HandleRequestAsync(request);
-            await SendResponseAsync(response);
+            request = await GetRequestAsync();
+            response = await HandleRequestAsync(request);
         }
         catch (Exception ex)
         {
-            // TODO Handle exceptions
             Console.WriteLine($"Error processing client: {ex.Message}");
+            response = new HttpResponse
+            {
+                StatusCode = 500,
+                StatusText = "Internal Server Error",
+                Version = request?.Version ?? "1.0"
+            };
         }
+
+        await SendResponseAsync(response);
     }
 
     private async Task<HttpRequest> GetRequestAsync()
@@ -53,8 +62,8 @@ public class ClienteHandler : IDisposable
         return response ?? new HttpResponse
         {
             Version = request.Version,
-            StatusCode = 500,
-            StatusText = "Internal Server Error"
+            StatusCode = 404,
+            StatusText = "Not Found"
         };
     }
 
