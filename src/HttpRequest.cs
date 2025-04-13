@@ -18,8 +18,8 @@ public record HttpRequest(string Method, string Path, string Version, ReadOnlyDi
         {
             if (string.IsNullOrWhiteSpace(lines[i])) break;
 
-            var headerParts = lines[i].Split(':');
-            headers.Add(headerParts[0], string.Join(':', headerParts.Skip(1)));
+            var headerParts = lines[i].Split(": ");
+            headers.Add(headerParts[0], headerParts[1]);
         }
 
         // TODO Parse body
