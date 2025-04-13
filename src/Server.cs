@@ -19,6 +19,7 @@ Console.CancelKeyPress += (sender, e) =>
 var handlers = new IRequestHandler[]
 {
     new HomeRequestHandler(),
+    new EchoRequestHandler(),
 };
 var chainedHandler = new PipelineRequestHandler(handlers);
 

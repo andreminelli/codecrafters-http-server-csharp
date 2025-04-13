@@ -9,7 +9,7 @@ public class PipelineRequestHandler : IRequestHandler
         _handlers = handlers;
     }
 
-    public async Task<HttpResponse?> HandleRequestAsync(HttpRequest request)
+    public async ValueTask<HttpResponse?> HandleRequestAsync(HttpRequest request)
     {
         foreach (var handler in _handlers)
         {
