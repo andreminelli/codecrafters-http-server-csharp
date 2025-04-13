@@ -3,14 +3,14 @@ using codecrafters_http_server.src.Handlers;
 using System.Net.Sockets;
 using System.Text;
 
-public class SocketHandler : IDisposable
+public class ClienteHandler : IDisposable
 {
-    private readonly Socket _clientSocket;
+    private readonly TcpClient _tcpClient;
     private readonly IRequestHandler _requestHandler;
 
-    public SocketHandler(Socket clientSocket, IRequestHandler requestHandler)
+    public ClienteHandler(TcpClient tcpClient, IRequestHandler requestHandler)
     {
-        _clientSocket = clientSocket;
+        _tcpClient = tcpClient;
         _requestHandler = requestHandler;
     }
 
@@ -36,9 +36,8 @@ public class SocketHandler : IDisposable
         int bytesRead = 0;
         do
         {
-            bytesRead = await _clientSocket.ReceiveAsync(
-                new ArraySegment<byte>(requestBuffer),
-                SocketFlags.None);
+            bytesRead = await _tcpClient.GetStream().ReadAsync(
+                new ArraySegment<byte>(requestBuffer));
 
             requestData.Append(Encoding.UTF8.GetString(requestBuffer, 0, bytesRead));
 
@@ -85,14 +84,13 @@ public class SocketHandler : IDisposable
     private async Task SendLineAsync(string line)
     {
         byte[] lineBytes = Encoding.UTF8.GetBytes(line);
-        await _clientSocket.SendAsync(
-            new ArraySegment<byte>(lineBytes),
-            SocketFlags.None);
+        await _tcpClient.GetStream().WriteAsync(
+            new ArraySegment<byte>(lineBytes));
     }
 
     public void Dispose()
     {
-        _clientSocket?.Close();
-        _clientSocket?.Dispose();
+        _tcpClient?.Close();
+        _tcpClient?.Dispose();
     }
 }

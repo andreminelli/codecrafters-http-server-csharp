@@ -1,13 +1,10 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 namespace codecrafters_http_server.src.Handlers;
 
-public class ChainedRequestHandler : IRequestHandler
+public class PipelineRequestHandler : IRequestHandler
 {
     private readonly IEnumerable<IRequestHandler> _handlers;
 
-    public ChainedRequestHandler(IEnumerable<IRequestHandler> handlers)
+    public PipelineRequestHandler(IEnumerable<IRequestHandler> handlers)
     {
         _handlers = handlers;
     }
@@ -22,6 +19,11 @@ public class ChainedRequestHandler : IRequestHandler
                 return response;
             }
         }
-        return null;
+        return new HttpResponse
+        {
+            Version = request.Version,
+            StatusCode = 404,
+            StatusText = "Not Found"
+        };
     }
 }

@@ -4,7 +4,7 @@ using codecrafters_http_server.src.Handlers;
 
 const int port = 4221;
 
-TcpListener server = new TcpListener(IPAddress.Any, port);
+TcpListener server = new(IPAddress.Any, port);
 server.Start();
 Console.WriteLine($"Server started on port {port}. Press Ctrl+C to stop.");
 
@@ -19,20 +19,19 @@ Console.CancelKeyPress += (sender, e) =>
 var handlers = new IRequestHandler[]
 {
     new HomeRequestHandler(),
-    new NotFoundRequestHandler()
 };
-var chainedHandler = new ChainedRequestHandler(handlers);
+var chainedHandler = new PipelineRequestHandler(handlers);
 
-while (!cts.Token.IsCancellationRequested)
+while (!cts.Token.IsCancellationRequested && server.Server.IsBound)
 {
     try
     {
-        var clientSocket = await server.AcceptSocketAsync(cts.Token);
+        var tcpClient = await server.AcceptTcpClientAsync(cts.Token);
 
-        _ = Task.Run(() =>
+        _ = Task.Run(async () =>
         {
-            using var handler = new SocketHandler(clientSocket, chainedHandler);
-            return handler.ProcessClientAsync();
+            using var handler = new ClienteHandler(tcpClient, chainedHandler);
+            await handler.ProcessClientAsync();
         });
     }
     catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
@@ -47,9 +46,7 @@ while (!cts.Token.IsCancellationRequested)
     {
         Console.WriteLine($"Error accepting connection: {ex.Message}");
     }
-    finally
-    {
-        server.Stop();
-        Console.WriteLine("Server stopped.");
-    }
 }
+
+server.Stop();
+Console.WriteLine("Server stopped.");
