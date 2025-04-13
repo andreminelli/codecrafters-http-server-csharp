@@ -21,7 +21,7 @@ var handlers = new IRequestHandler[]
     new HomeRequestHandler(),
     new EchoRequestHandler(),
     new UserAgentRequestHandler(),
-    new FilesRequestHandler(args[1])
+    new FilesRequestHandler(args.Length > 1 ? args[1] : "//public_files")
 };
 var chainedHandler = new PipelineRequestHandler(handlers);
 
