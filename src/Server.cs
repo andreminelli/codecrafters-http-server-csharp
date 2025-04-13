@@ -21,6 +21,7 @@ var handlers = new IRequestHandler[]
     new HomeRequestHandler(),
     new EchoRequestHandler(),
     new UserAgentRequestHandler(),
+    new FilesRequestHandler(args[1])
 };
 var chainedHandler = new PipelineRequestHandler(handlers);
 
