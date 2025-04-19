@@ -1,10 +1,10 @@
 namespace codecrafters_http_server.src.Handlers;
 
-public class FilesRequestHandler : IRequestHandler
+public class GetFilesRequestHandler : IRequestHandler
 {
     private readonly string _filesDirectory;
 
-    public FilesRequestHandler(string filesDirectory)
+    public GetFilesRequestHandler(string filesDirectory)
     {
         _filesDirectory = filesDirectory;
     }

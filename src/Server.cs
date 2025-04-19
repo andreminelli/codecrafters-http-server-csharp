@@ -16,12 +16,15 @@ Console.CancelKeyPress += (sender, e) =>
     e.Cancel = true;
 };
 
+string filesDirectory = args.Length > 1 ? args[1] : "//public_files";
+
 var handlers = new IRequestHandler[]
 {
     new HomeRequestHandler(),
     new EchoRequestHandler(),
     new UserAgentRequestHandler(),
-    new FilesRequestHandler(args.Length > 1 ? args[1] : "//public_files")
+    new GetFilesRequestHandler(filesDirectory),
+    new PostFilesRequestHandler(filesDirectory)
 };
 var chainedHandler = new PipelineRequestHandler(handlers);
 
