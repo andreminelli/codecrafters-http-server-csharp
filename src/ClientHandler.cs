@@ -35,7 +35,14 @@ public class ClientHandler : IDisposable
             };
         }
 
-        await SendResponseAsync(response);
+        try
+        {
+            await SendResponseAsync(response);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending response to client: {ex.Message}");
+        }
     }
 
     private async Task<HttpRequest> GetRequestAsync()
@@ -50,7 +57,7 @@ public class ClientHandler : IDisposable
 
             requestData.Append(Encoding.UTF8.GetString(requestBuffer, 0, bytesRead));
 
-            if (requestData.ToString().EndsWith("\r\n\r\n")) break;
+            if (requestData.ToString().Contains("\r\n\r\n")) break;
         } while (bytesRead > 0);
 
         return HttpRequest.Parse(requestData.ToString());
