@@ -95,9 +95,9 @@ public class ClientHandler : IDisposable
     {
         if (response?.Body is not null &&
             request.Headers.TryGetValue("Accept-Encoding", out var encoding) &&
-            encoding.Equals("gzip", StringComparison.OrdinalIgnoreCase))
+            encoding.Contains("gzip", StringComparison.OrdinalIgnoreCase))
         {
-            var compressedResponseBody = await CompressResponseAsync(response.Body);
+            var compressedResponseBody = await CompressBodyAsync(response.Body);
             response.Headers["Content-Encoding"] = "gzip";
             response.Headers["Content-Length"] = compressedResponseBody.Length.ToString();
             response.Body = compressedResponseBody;
@@ -106,7 +106,7 @@ public class ClientHandler : IDisposable
         return response;
     }
 
-    private async Task<string> CompressResponseAsync(string body)
+    private static async Task<string> CompressBodyAsync(string body)
     {
         await using var memoryStream = new MemoryStream(body.Length);
         await using var gzipStream = new GZipStream(memoryStream, CompressionLevel.Fastest);
