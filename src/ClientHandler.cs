@@ -107,10 +107,11 @@ public class ClientHandler : IDisposable
 
     private static async Task<Memory<byte>> CompressBodyAsync(Memory<byte> body)
     {
-        await using var outputStream = new MemoryStream(body.Length);
+        await using var outputStream = new MemoryStream();
         await using var gzipStream = new GZipStream(outputStream, CompressionMode.Compress, true);
         await gzipStream.WriteAsync(body);
         await gzipStream.FlushAsync();
+
         return outputStream.ToArray().AsMemory();
     }
 
