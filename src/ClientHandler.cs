@@ -1,5 +1,6 @@
 using codecrafters_http_server.src;
 using codecrafters_http_server.src.Handlers;
+using System.IO.Compression;
 using System.Net.Sockets;
 using System.Text;
 
@@ -81,12 +82,39 @@ public class ClientHandler : IDisposable
     private async Task<HttpResponse> HandleRequestAsync(HttpRequest request)
     {
         var response = await _requestHandler.HandleRequestAsync(request);
+        response = await HandleCompressionAsync(request, response);
         return response ?? new HttpResponse
         {
             Version = request.Version,
             StatusCode = 404,
             StatusText = "Not Found"
         };
+    }
+
+    private async Task<HttpResponse?> HandleCompressionAsync(HttpRequest request, HttpResponse? response)
+    {
+        if (response?.Body is not null &&
+            request.Headers.TryGetValue("Accept-Encoding", out var encoding) &&
+            encoding.Equals("gzip", StringComparison.OrdinalIgnoreCase))
+        {
+            var compressedResponseBody = await CompressResponseAsync(response.Body);
+            response.Headers["Content-Encoding"] = "gzip";
+            response.Headers["Content-Length"] = compressedResponseBody.Length.ToString();
+            response.Body = compressedResponseBody;
+        }
+
+        return response;
+    }
+
+    private async Task<string> CompressResponseAsync(string body)
+    {
+        await using var memoryStream = new MemoryStream(body.Length);
+        await using var gzipStream = new GZipStream(memoryStream, CompressionLevel.Fastest);
+        await using var writer = new StreamWriter(gzipStream);
+        await writer.WriteAsync(body);
+        await writer.FlushAsync();
+        await gzipStream.FlushAsync();
+        return Encoding.UTF8.GetString(memoryStream.ToArray());
     }
 
     private async Task SendResponseAsync(HttpResponse response)
