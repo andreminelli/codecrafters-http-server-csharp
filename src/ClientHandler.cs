@@ -97,24 +97,21 @@ public class ClientHandler : IDisposable
             request.Headers.TryGetValue("Accept-Encoding", out var encoding) &&
             encoding.Contains("gzip", StringComparison.OrdinalIgnoreCase))
         {
-            var compressedResponseBody = await CompressBodyAsync(response.Body);
+            var compressedResponseBody = await CompressBodyAsync(response.Body.Value);
             response.Headers["Content-Encoding"] = "gzip";
-            response.Headers["Content-Length"] = compressedResponseBody.Length.ToString();
-            response.Body = compressedResponseBody;
+            response.SetBody(compressedResponseBody);
         }
 
         return response;
     }
 
-    private static async Task<string> CompressBodyAsync(string body)
+    private static async Task<Memory<byte>> CompressBodyAsync(Memory<byte> body)
     {
         await using var memoryStream = new MemoryStream(body.Length);
         await using var gzipStream = new GZipStream(memoryStream, CompressionLevel.Fastest);
-        await using var writer = new StreamWriter(gzipStream);
-        await writer.WriteAsync(body);
-        await writer.FlushAsync();
+        await gzipStream.WriteAsync(body);
         await gzipStream.FlushAsync();
-        return Encoding.UTF8.GetString(memoryStream.ToArray());
+        return memoryStream.ToArray().AsMemory();
     }
 
     private async Task SendResponseAsync(HttpResponse response)
@@ -131,9 +128,9 @@ public class ClientHandler : IDisposable
         // Send empty line to separate headers from body
         await SendLineAsync("\r\n");
 
-        if (!string.IsNullOrEmpty(response.Body))
+        if (response.Body?.IsEmpty == false)
         {
-            await SendLineAsync(response.Body);
+            await SendBytesAsync(response.Body.Value);
         }
 
         // Send final empty line to indicate end of response
@@ -142,9 +139,12 @@ public class ClientHandler : IDisposable
 
     private async Task SendLineAsync(string line)
     {
-        byte[] lineBytes = Encoding.UTF8.GetBytes(line);
-        await _tcpClient.GetStream().WriteAsync(
-            new ArraySegment<byte>(lineBytes));
+        await SendBytesAsync(Encoding.UTF8.GetBytes(line).AsMemory());
+    }
+
+    private async Task SendBytesAsync(Memory<byte> bytes)
+    {
+        await _tcpClient.GetStream().WriteAsync(bytes);
     }
 
     public void Dispose()

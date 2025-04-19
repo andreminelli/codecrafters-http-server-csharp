@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace codecrafters_http_server.src.Handlers;
 
 public class EchoRequestHandler : IRequestHandler
@@ -12,9 +14,8 @@ public class EchoRequestHandler : IRequestHandler
                 StatusCode = 200,
                 StatusText = "OK"
             };
-            result.Body = request.Path.Substring(6);
+            result.SetBody(request.Path.Substring(6));
             result.Headers.Add("Content-Type", "text/plain");
-            result.Headers.Add("Content-Length", result.Body.Length.ToString());
 
             return ValueTask.FromResult<HttpResponse?>(result);
         }

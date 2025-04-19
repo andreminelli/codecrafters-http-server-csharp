@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace codecrafters_http_server.src.Handlers;
 
 public class GetFilesRequestHandler : IRequestHandler
@@ -23,20 +25,20 @@ public class GetFilesRequestHandler : IRequestHandler
                     StatusCode = 200,
                     StatusText = "OK"
                 };
-                result.Body = File.ReadAllText(filePath);
+                result.SetBody(File.ReadAllText(filePath));
                 result.Headers.Add("Content-Type", "application/octet-stream");
-                result.Headers.Add("Content-Length", result.Body.Length.ToString());
 
                 return ValueTask.FromResult<HttpResponse?>(result);
             }
 
-            return ValueTask.FromResult<HttpResponse?>(new()
+            HttpResponse notFoundResult = new()
             {
                 Version = request.Version,
                 StatusCode = 404,
-                StatusText = "Not Found",
-                Body = "File not found."
-            });
+                StatusText = "Not Found"
+            };
+            notFoundResult.SetBody("File not found.");
+            return ValueTask.FromResult<HttpResponse?>(notFoundResult);
         }
 
         return ValueTask.FromResult<HttpResponse?>(null);

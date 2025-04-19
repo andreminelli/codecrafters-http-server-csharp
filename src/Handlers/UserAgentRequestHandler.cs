@@ -14,11 +14,10 @@ public class UserAgentRequestHandler : IRequestHandler
                 StatusCode = 200,
                 StatusText = "OK"
             };
-            result.Body = request.Headers.TryGetValue("User-Agent", out var userAgentValue) ?
-                userAgentValue : " ";
+            result.SetBody(request.Headers.TryGetValue("User-Agent", out var userAgentValue) ?
+                userAgentValue : " ");
 
             result.Headers.Add("Content-Type", "text/plain");
-            result.Headers.Add("Content-Length", result.Body.Length.ToString());
 
             return ValueTask.FromResult<HttpResponse?>(result);
         }
