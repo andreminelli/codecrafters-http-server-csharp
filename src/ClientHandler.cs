@@ -5,6 +5,10 @@ using System.Text;
 
 public class ClientHandler : IDisposable
 {
+    private static readonly byte[] DoubleLineBreak = Encoding.UTF8.GetBytes("\r\n\r\n");
+
+    private const int MaxRequestSize = 1024 * 32;
+    private const int ReadBufferSize = 1024 * 4;
     private readonly TcpClient _tcpClient;
     private readonly IRequestHandler _requestHandler;
 
@@ -45,22 +49,33 @@ public class ClientHandler : IDisposable
         }
     }
 
+    private static bool HasDoubleLineBreak(Memory<byte> requestData, int totalBytesRead)
+        => requestData[..totalBytesRead].Span.IndexOf(DoubleLineBreak) > 0;
+
     private async Task<HttpRequest> GetRequestAsync()
     {
-        var requestBuffer = new byte[2048];
-        StringBuilder requestData = new(2048);
+        var requestData = new Memory<byte>(new byte[MaxRequestSize]);
+        var buffer = new Memory<byte>(new byte[ReadBufferSize]);
+
+        int totalBytesRead = 0;
         int bytesRead = 0;
         do
         {
-            bytesRead = await _tcpClient.GetStream().ReadAsync(
-                new ArraySegment<byte>(requestBuffer));
+            bytesRead = await _tcpClient.GetStream().ReadAsync(buffer);
 
-            requestData.Append(Encoding.UTF8.GetString(requestBuffer, 0, bytesRead));
+            if (bytesRead + totalBytesRead > MaxRequestSize)
+            {
+                throw new InvalidOperationException($"Request size is bigger than current maximum size ({MaxRequestSize} bytes)");
+            }
 
-            if (requestData.ToString().Contains("\r\n\r\n")) break;
+            buffer[..bytesRead].CopyTo(
+                    requestData.Slice(totalBytesRead, bytesRead));
+            totalBytesRead += bytesRead;
+
+            if (HasDoubleLineBreak(requestData, totalBytesRead)) break;
         } while (bytesRead > 0);
 
-        return HttpRequest.Parse(requestData.ToString());
+        return HttpRequest.Parse(requestData[..totalBytesRead]);
     }
 
     private async Task<HttpResponse> HandleRequestAsync(HttpRequest request)

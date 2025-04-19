@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Text;
 
 namespace codecrafters_http_server.src;
 
@@ -6,8 +7,9 @@ public record HttpRequest(string Method, string Path, string Version, ReadOnlyDi
 {
     private const string LineBreak = "\r\n";
 
-    public static HttpRequest Parse(string request)
+    public static HttpRequest Parse(Memory<byte> requestBytes)
     {
+        string request = Encoding.UTF8.GetString(requestBytes.Span);
         var lines = request.Split([LineBreak], StringSplitOptions.None);
 
         var (method, path, version) = ParseRequestLine(lines[0]);
