@@ -1,5 +1,6 @@
 using codecrafters_http_server.src;
 using codecrafters_http_server.src.Handlers;
+using EasyCompressor;
 using System.IO.Compression;
 using System.Net.Sockets;
 using System.Text;
@@ -108,10 +109,8 @@ public class ClientHandler : IDisposable
     private static async Task<Memory<byte>> CompressBodyAsync(Memory<byte> body)
     {
         await using var outputStream = new MemoryStream();
-        await using var gzipStream = new GZipStream(outputStream, CompressionMode.Compress, true);
-        await gzipStream.WriteAsync(body);
-        await gzipStream.FlushAsync();
-
+        var compressor = new GZipCompressor();
+        await compressor.CompressAsync(body.ToArray(), outputStream);
         return outputStream.ToArray().AsMemory();
     }
 
